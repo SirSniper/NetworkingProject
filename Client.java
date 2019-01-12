@@ -2,6 +2,10 @@ import java.net.*;
 import java.util.Scanner;
 
 public class Client {
+    Client(){
+        
+    }
+
 
     private static void getMenu(){
         System.out.println("1. ");
