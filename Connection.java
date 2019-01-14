@@ -25,6 +25,7 @@ public class Connection{
         try {
             String input = in.readLine();
             if (input == null || input.isEmpty()) {
+                // If the input it empty (i.e. dead connection),  return 7 indicating closing connection
                 return 7;
             }
             int inputValue = Integer.parseInt(input);
@@ -46,6 +47,7 @@ public class Connection{
             return ;
         }
         
+        // Create a reader to handle the terminal output
         BufferedReader cmdReader = new BufferedReader(new InputStreamReader(p.getInputStream()));
         String line = "";
         try{
@@ -55,6 +57,7 @@ public class Connection{
             cmdReader.close();
         } catch (Exception e){
             System.out.println("Error closing cmd reader");
+            cmdReader.close();
         }
         return ;
     }

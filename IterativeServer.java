@@ -29,8 +29,10 @@ public class IterativeServer{
             clientSocket = serverSocket.accept();
             newConnection = new Connection(clientSocket);
             clientHandler = new Iterator(newConnection);
+            clientHandler.start();
         } catch(Exception e){
             System.out.println("Error accepting initial connection");
+            serverSocket.close();
             return;
         }
         

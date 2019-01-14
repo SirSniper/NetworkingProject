@@ -19,13 +19,21 @@ public class ConnectionThread extends Thread{
             BufferedReader in = new BufferedReader(new InputStreamReader(this.conn.getInputStream()));
             PrintWriter out = new PrintWriter(this.conn.getOutputStream(), true);
 
-            // Get messages from the client, line by line; return them capitalized
+            // Keep trying to get commands
             while (true) {
                 String input = in.readLine();
                 if (input == null || input.isEmpty()) {
+                    // If the stream is empty (i.e. dead connection) break out and close this connection
                     break;
                 }
-                int inputValue = Integer.parseInt(input);
+                int inputValue;
+                try{
+                    inputValue = Integer.parseInt(input);
+                }catch(Exception e){
+                    out.println("Error processing last command");
+                    continue;
+                }
+                 
                 Runtime cmd = Runtime.getRuntime();
                 Process p;
                 try{
@@ -38,8 +46,9 @@ public class ConnectionThread extends Thread{
                 BufferedReader cmdReader = new BufferedReader(new InputStreamReader(p.getInputStream()));
                 String line = "";
 
+                // While the terminal has out, send each line back to connection
                 while ((line = cmdReader.readLine()) != null) {
-                    out.println(input);
+                    out.println(line);
                 }
 
                 cmdReader.close();
