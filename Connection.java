@@ -1,11 +1,10 @@
-import java.lang.Thread;
 import java.net.*;
 import java.io.*;
 
 public class Connection{
     private Socket conn;
     private static String[] commands = {
-        "echo 1"
+        "date", "uptime", "free", "netstat", "who", "ps -e", "quit"
     };
     BufferedReader in;
     PrintWriter out;
@@ -23,7 +22,9 @@ public class Connection{
 
     public int getCommand(){
         try {
+            System.out.println("Awaiting input");
             String input = in.readLine();
+            System.out.println("Got input " + input);
             if (input == null || input.isEmpty()) {
                 // If the input it empty (i.e. dead connection),  return 7 indicating closing connection
                 return 7;
@@ -37,11 +38,11 @@ public class Connection{
     }
 
     public void executeCommand(int command){
+        long start = System.nanoTime();
         Runtime cmd = Runtime.getRuntime();
         Process p;
         try{
-            p = cmd.exec(commands[command]);
-            p.waitFor();
+            p = cmd.exec(commands[command-1]);
         }catch(Exception e){
             System.out.println("Error executing command");
             return ;
@@ -51,14 +52,20 @@ public class Connection{
         BufferedReader cmdReader = new BufferedReader(new InputStreamReader(p.getInputStream()));
         String line = "";
         try{
+            System.out.println("Sending Command");
             while ((line = cmdReader.readLine()) != null) {
                 this.out.println(line);
             }
             cmdReader.close();
+            try{
+                p.waitFor();
+            } catch (Exception t){
+                System.out.println("Error waiting for exit");
+            }
         } catch (Exception e){
             System.out.println("Error closing cmd reader");
-            cmdReader.close();
         }
+        System.out.printf("Execution time %f\n", Long.valueOf((System.nanoTime() - start) / 1000000).doubleValue());
         return ;
     }
 }

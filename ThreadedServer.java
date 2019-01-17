@@ -10,6 +10,11 @@ public class ThreadedServer{
         this.port = port;
     }
 
+    public static void main(String[] args){
+        ThreadedServer cur = new ThreadedServer(3333);
+        cur.serve();
+    }
+
     public void serve(){
         ServerSocket serverSocket;
         // Host the server
@@ -29,6 +34,7 @@ public class ThreadedServer{
                 clientSocket = serverSocket.accept();
                 newConnection = new ConnectionThread(clientSocket);
                 newConnection.start();
+                System.out.println("Accepting new connection");
                 connections.add(newConnection);
             } catch(Exception e){
                 System.out.println("Error accepting connection");

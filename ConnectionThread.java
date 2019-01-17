@@ -5,7 +5,7 @@ import java.io.*;
 public class ConnectionThread extends Thread{
     private Socket conn;
     private static String[] commands = {
-        "echo 1"
+        "date", "uptime", "free", "netstat", "who", "ps -e", "quit"
     };
     
     ConnectionThread(Socket conn){
@@ -18,6 +18,9 @@ public class ConnectionThread extends Thread{
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(this.conn.getInputStream()));
             PrintWriter out = new PrintWriter(this.conn.getOutputStream(), true);
+            BufferedReader cmdReader;
+            Runtime cmd = Runtime.getRuntime();
+            Process p;
 
             // Keep trying to get commands
             while (true) {
@@ -33,28 +36,38 @@ public class ConnectionThread extends Thread{
                     out.println("Error processing last command");
                     continue;
                 }
-                 
-                Runtime cmd = Runtime.getRuntime();
-                Process p;
+                long start = System.nanoTime();
+                ProcessBuilder pb = new ProcessBuilder(commands[inputValue-1]);
                 try{
-                    p = cmd.exec(commands[inputValue-1]);
-                    p.waitFor();
+                    p = pb.start();
+                    
                 } catch(Exception e){
                     System.out.println("Failed to execute command");
                     continue;
                 }
-                BufferedReader cmdReader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                cmdReader = new BufferedReader(new InputStreamReader(p.getInputStream()));
                 String line = "";
 
                 // While the terminal has out, send each line back to connection
                 while ((line = cmdReader.readLine()) != null) {
                     out.println(line);
                 }
-
                 cmdReader.close();
+
+                try{
+                    p.waitFor();
+                } catch(Exception t){
+                    System.out.println("Error waiting for process");
+                }
+                System.out.printf("Execution time %f\n", Long.valueOf((System.nanoTime() - start) / 1000000).doubleValue());
+
             }
+
+        } catch (SocketException e){
+            System.out.println("Client Disconnected");
         } catch (IOException e) {
             System.out.println("Error reading command from socket");
+            e.printStackTrace();
         } finally {
             try { this.conn.close(); } catch (IOException e) {}
             System.out.println("Connection closed");

@@ -3,6 +3,7 @@ import java.io.*;
 import java.util.List;
 import java.util.ArrayList;
 import java.lang.Thread;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class IterativeServer{
     private int port;
@@ -29,10 +30,15 @@ public class IterativeServer{
             clientSocket = serverSocket.accept();
             newConnection = new Connection(clientSocket);
             clientHandler = new Iterator(newConnection);
+            System.out.println("Accepting new connection");
             clientHandler.start();
         } catch(Exception e){
             System.out.println("Error accepting initial connection");
-            serverSocket.close();
+            try{
+                serverSocket.close();
+            }catch(Exception f){
+                System.out.println("Error closing socket");
+            }
             return;
         }
         
@@ -55,11 +61,18 @@ public class IterativeServer{
         }
     }
 
+    public static void main(String[] args){
+        IterativeServer cur = new IterativeServer(3333);
+        cur.serve();
+    }
+
     private class Iterator extends Thread{
         private List<Connection> clients;
+        private List<Connection> clientsToRemove;
 
         Iterator(Connection client){
-            this.clients = new ArrayList<>();
+            this.clients = new CopyOnWriteArrayList<>();
+            this.clientsToRemove = new CopyOnWriteArrayList<>();
             this.clients.add(client);
         }
 
@@ -67,10 +80,15 @@ public class IterativeServer{
         public void run(){
             int command = 0;
             while(true){
+                if(!this.clientsToRemove.isEmpty()){
+                    this.clients.removeAll(this.clientsToRemove);
+                    this.clientsToRemove = new CopyOnWriteArrayList<>();
+                }
                 for(Connection client : this.clients){
                     command = client.getCommand();
-                    if(command != 7){
-                        this.clients.remove(client);
+                    if(command == 7){
+                        this.clientsToRemove.add(client);
+                        System.out.println("Client Disconnecting");
                     }else{
                         client.executeCommand(command);
                     }

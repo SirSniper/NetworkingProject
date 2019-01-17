@@ -1,7 +1,9 @@
 import java.io.BufferedReader;
 import java.io.PrintWriter;
+import java.io.InputStreamReader;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 public class Client extends Thread{
@@ -12,11 +14,13 @@ public class Client extends Thread{
     private BufferedReader receiver;
     public List<Double> commandTimes = new ArrayList<>();
     private int[] emulationCommands;
+    private boolean printOutput;
 
-    Client(String hostname, int port, int[] emulationCommands){
+    Client(String hostname, int port, int[] emulationCommands, boolean printOutput){
         this.hostname = hostname;
         this.port = port;
         this.emulationCommands = emulationCommands;
+        this.printOutput = printOutput;
         try{
             this.conn = new Socket(this.hostname, this.port);
             this.sender = new PrintWriter(this.conn.getOutputStream(), true);
@@ -26,7 +30,7 @@ public class Client extends Thread{
         }
     }
 
-    private static String[] commandOptions = {"test","test","test","test","test","test","test"};
+    private static String[] commandOptions = {"Host Date and Time", "Host uptime", "Host memory use", "Host netstat", "Host current users", "Host running processes", "Quit"};
 
 
     private static void getMenu(){
@@ -56,6 +60,11 @@ public class Client extends Thread{
                 valid = true;
             }
         }
+        // try{
+        //     userSelectionReader.close();
+        // }catch(Exception e){
+        //     System.out.println("Error closing scanner");
+        // }
         return selectedItem;
     }
 
@@ -63,22 +72,42 @@ public class Client extends Thread{
         this.sender.println(Integer.toString(command));
         String line = "";
         if(command == 7){
-            this.conn.close();
+            try{
+                this.conn.close();
+            }catch(Exception e){
+                System.out.println("Error closing connection");
+            }
         } else{
             // While the connection has content, print it to the screen
-            while ((line = receiver.readLine()) != null) {
-                System.out.println(line);
+            try{
+                line = receiver.readLine();
+                if(this.printOutput){
+                    System.out.println(line);
+                }
+                while (receiver.ready()) {
+                    line = receiver.readLine();
+                    if(this.printOutput){
+                        System.out.println(line);
+                    }
+                }
+            } catch(Exception e){
+                System.out.println("Error reading received data");
             }
         }
+        return ;
     }
 
     public static void main(String args[]){
         int selectedCommand;
-        Client curClient = new Client("",3333, new String[]{});
+        Client curClient = new Client("192.168.101.123",3333, new int[]{}, true);
+        System.out.println("Connected");
         while(true){
+            System.out.println("Getting input");
             selectedCommand = getMenuSelection();
+            System.out.printf("Got command %d\n", selectedCommand);
             curClient.sendCommand(selectedCommand);
-            if(command == 7){
+            if(selectedCommand == 7){
+                System.out.println("Exiting...");
                 break;
             }
         }
@@ -87,8 +116,9 @@ public class Client extends Thread{
     public void emulate(int[] commands){
         for(int command: commands){
             long start = System.nanoTime();  
+            System.out.printf("Sending command %d\n", command);
             this.sendCommand(command);
-            this.commandTimes.add((System.nanoTime() - start) / 1000000);
+            this.commandTimes.add(Long.valueOf((System.nanoTime() - start) / 1000000).doubleValue());
         }
     }
 
